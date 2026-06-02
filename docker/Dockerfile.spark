@@ -1,0 +1,8 @@
+FROM apache/spark:3.5.1-python3
+
+USER root
+
+COPY docker/requirements.spark.txt .
+RUN pip3 install --no-cache-dir -r requirements.spark.txt
+
+WORKDIR /app

@@ -1,0 +1,81 @@
+services:
+
+  # -------------------------------------------
+  # 1. PostgreSQL + pgvector
+  # -------------------------------------------
+  postgresql:
+    image: ankane/pgvector:latest
+    container_name: bapsang_db
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------
+  # 2. FastAPI (기능 B 로그 수집 + 기능 C 검색)
+  # -------------------------------------------
+  fastapi:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.fastapi
+    container_name: bapsang_api
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # -------------------------------------------
+  # 3. Spark (기능 A 배치 + 기능 B 스트리밍)
+  # -------------------------------------------
+  spark:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.spark
+    container_name: bapsang_spark
+    env_file: .env
+    ports:
+      - "4040:4040"
+    volumes:
+      - .:/app
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    command: >
+      bash -c "python3 /app/realtime_log/streaming/category_weight_stream.py &
+               python3 /app/batch_recommendation/batch_runner.py"
+
+  # -------------------------------------------
+  # 4. Streamlit (대시보드 UI)
+  # -------------------------------------------
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: bapsang_dashboard
+    env_file: .env
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    command: streamlit run /app/dashboard/main_page.py --server.address 0.0.0.0
+
+volumes:
+  postgres_data:
