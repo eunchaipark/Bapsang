@@ -22,7 +22,24 @@ services:
       retries: 5
 
   # -------------------------------------------
-  # 2. FastAPI (기능 B 로그 수집 + 기능 C 검색)
+  # 2. Data Loader (foods 테이블 초기 적재 후 종료)
+  # -------------------------------------------
+  data_loader:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.fastapi
+    container_name: bapsang_data_loader
+    env_file: .env
+    volumes:
+      - .:/app
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    command: python db/load_foods.py
+    restart: "no"
+
+  # -------------------------------------------
+  # 3. FastAPI (기능 B 로그 수집 + 기능 C 검색)
   # -------------------------------------------
   fastapi:
     build:
