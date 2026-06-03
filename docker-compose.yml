@@ -57,7 +57,7 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   # -------------------------------------------
-  # 3. Spark (기능 A 배치 + 기능 B 스트리밍)
+  # 4. Spark (기능 A 배치 + 기능 B 스트리밍)
   # -------------------------------------------
   spark:
     build:
@@ -73,11 +73,11 @@ services:
       postgresql:
         condition: service_healthy
     command: >
-      bash -c "python3 /app/realtime_log/streaming/category_weight_stream.py &
-               python3 /app/batch_recommendation/batch_runner.py"
+      bash -c "PYTHONPATH=/app python3 /app/realtime_log/streaming/category_weight_stream.py &
+               PYTHONPATH=/app python3 /app/batch_recommendation/batch_runner.py"
 
   # -------------------------------------------
-  # 4. Streamlit (대시보드 UI)
+  # 5. Streamlit (대시보드 UI)
   # -------------------------------------------
   streamlit:
     build:
