@@ -1,5 +1,8 @@
 FROM apache/spark:3.5.1-python3
 
+
+ENV PYTHONUNBUFFERED=1
+
 USER root
 
 COPY docker/requirements.spark.txt .
