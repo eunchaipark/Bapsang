@@ -17,8 +17,8 @@ def run_batch():
 
 
 scheduler = BlockingScheduler()
-scheduler.add_job(run_batch, 'interval', hours=1)
+scheduler.add_job(run_batch, 'interval', minutes=1)
 
-print("배치 스케줄러 시작 (1시간 주기)")
+print("배치 스케줄러 시작 (1분 주기)")
 run_batch()
 scheduler.start()
