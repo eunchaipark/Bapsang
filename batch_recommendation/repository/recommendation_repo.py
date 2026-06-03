@@ -13,13 +13,7 @@ def save_recommendations(rows: list):
 
         batch_run_at = rows[0][4]
         user_ids = list(set(r[0] for r in rows))
-
-        # 이전 배치 삭제 (새 배치 INSERT 완료 후)
-        cur.execute("""
-            DELETE FROM recommendations
-            WHERE user_id = ANY(%s)
-            AND batch_run_at < %s
-        """, (user_ids, batch_run_at))
+        food_ids = list(set(r[1] for r in rows))
 
         # 새 배치 INSERT
         execute_values(cur, """
@@ -27,8 +21,28 @@ def save_recommendations(rows: list):
             VALUES %s
         """, rows)
 
+        # 이전 배치 DELETE
+        cur.execute("""
+            DELETE FROM recommendations
+            WHERE user_id = ANY(%s)
+            AND batch_run_at < %s
+        """, (user_ids, batch_run_at))
+
+        # click_count 갱신
+        cur.execute("""
+            UPDATE foods
+            SET click_count = sub.cnt
+            FROM (
+                SELECT food_id, COUNT(*) AS cnt
+                FROM user_click_logs
+                GROUP BY food_id
+            ) sub
+            WHERE foods.food_id = sub.food_id
+        """)
+
         conn.commit()
         print(f"recommendations 저장 완료: {len(rows)}건")
+        print(f"click_count 갱신 완료: {len(food_ids)}개 음식")
 
     finally:
         cur.close()
