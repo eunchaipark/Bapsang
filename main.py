@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from db import engine
 from contextlib import asynccontextmanager
+from batch_recommendation.api.recommendation_router import router as recommendation_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -14,6 +15,8 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="Bapsang API", lifespan=lifespan)
+
+app.include_router(recommendation_router, prefix="/recommendations", tags=["recommendations"])
 
 @app.get("/health")
 def health():
