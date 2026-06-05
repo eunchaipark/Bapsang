@@ -27,3 +27,9 @@ def health_db():
         return {"status": "ok", "db": "connected"}
     except Exception as e:
         return {"status": "error", "db": str(e)}
+    
+
+# router 연결
+from realtime_log.api.log_router import router
+
+app.include_router(router)
