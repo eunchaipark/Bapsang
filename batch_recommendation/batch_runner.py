@@ -20,9 +20,11 @@ def run_batch():
 
 interval = int(os.getenv('BATCH_INTERVAL_MINUTES', 60))
 
+#동기화 스케쥴러
 scheduler = BlockingScheduler()
 scheduler.add_job(run_batch, 'interval', minutes=interval)
 
 print(f"배치 스케줄러 시작 ({interval}분 주기)")
+# 먼저 한번 돌리고 시작
 run_batch()
 scheduler.start()

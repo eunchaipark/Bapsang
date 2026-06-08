@@ -1,5 +1,6 @@
 from db import get_connection
 
+# 클릭 과 좋아요에 따른 점수 -> 훗날 검색에도 확장가능
 def fetch_als_input():
     conn = get_connection()
     try:
