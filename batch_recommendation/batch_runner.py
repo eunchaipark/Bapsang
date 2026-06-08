@@ -1,4 +1,6 @@
+import os
 from apscheduler.schedulers.blocking import BlockingScheduler
+
 from batch_recommendation.service.als_trainer import train_als
 from batch_recommendation.service.recommendation_writer import extract_top20
 from batch_recommendation.repository.recommendation_repo import save_recommendations
@@ -16,9 +18,13 @@ def run_batch():
     print("배치 완료")
 
 
-scheduler = BlockingScheduler()
-scheduler.add_job(run_batch, 'interval', minutes=1)
+interval = int(os.getenv('BATCH_INTERVAL_MINUTES', 60))
 
-print("배치 스케줄러 시작 (1분 주기)")
+#동기화 스케쥴러
+scheduler = BlockingScheduler()
+scheduler.add_job(run_batch, 'interval', minutes=interval)
+
+print(f"배치 스케줄러 시작 ({interval}분 주기)")
+# 먼저 한번 돌리고 시작
 run_batch()
 scheduler.start()

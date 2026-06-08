@@ -38,9 +38,9 @@ def train_als():
         userCol="user_id",
         itemCol="food_id",
         ratingCol="rating",
-        rank=10,
-        maxIter=10,
-        regParam=0.1,
+        rank=10,  # 차원수
+        maxIter=10, # 반복수
+        regParam=0.1, #과적합 방지
         coldStartStrategy="drop",
         implicitPrefs=False,
     )
