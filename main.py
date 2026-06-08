@@ -33,6 +33,8 @@ def health_db():
     
 
 # router 연결
-from realtime_log.api.log_router import router
+from realtime_log.api.log_router import router as log_router
+from food_search.api.search_router import router as search_router
 
-app.include_router(router)
+app.include_router(log_router)
+app.include_router(search_router)
