@@ -1,51 +1,31 @@
-'''
-import time
-
-print("스트리밍 시작 - 아직 미구현")
-while True:
-    time.sleep(20)
-'''
 from time import sleep
-from realtime_log.repository.offset_repo import get_last_offset
-from realtime_log.repository.offset_repo import update_offset
-from realtime_log.repository.weight_repo import upsert_weights
-
-
-from collections import defaultdict
-
-
-def aggregate(logs):
-
-    result = defaultdict(int)
-
-    for log in logs:
-
-        score = 1
-
-        if log["action_type"] == "LIKE":
-            score = 3
-
-        key = (
-            log["user_id"],
-            log["category"]
-        )
-
-        result[key] += score
-
-    return result
+from realtime_log.repository.offset_repo import get_last_offset, update_offset, load_logs
+from realtime_log.repository.weight_repo import aggregate, upsert_weights
 
 
 while True:
+    try:
+        last_offset = get_last_offset()
 
-    last_offset = get_last_offset()
+        logs = load_logs(last_offset)
+        if not logs:
+            print("[STREAM] no new logs")
+            sleep(20)
+            continue
 
-    logs = load_logs(last_offset)
+        weights = aggregate(logs)
 
-    weights = aggregate(logs)
+        upsert_weights(weights)
 
-    upsert_weights(weights)
+        max_log_id = max(
+            log["log_id"]
+            for log in logs
+        )
+        update_offset(max_log_id)
+        
+        print(f"[STREAM] processed {len(logs)} logs")
 
-    update_offset(max_log_id)
-
-    sleep(20)
+    except Exception as e:
+        print(f"[STREAM ERROR] : {e}")
     
+    sleep(20)
