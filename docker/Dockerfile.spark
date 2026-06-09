@@ -8,4 +8,9 @@ USER root
 COPY docker/requirements.spark.txt .
 RUN pip3 install --no-cache-dir -r requirements.spark.txt
 
+RUN apt-get update && \
+    apt-get install -y wget && \
+    wget https://jdbc.postgresql.org/download/postgresql-42.7.3.jar \
+    -O /opt/spark/jars/postgresql-42.7.3.jar
+
 WORKDIR /app
