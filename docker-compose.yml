@@ -85,6 +85,8 @@ services:
       dockerfile: docker/Dockerfile.dashboard
     container_name: bapsang_dashboard
     env_file: .env
+    environment:
+      - FASTAPI_URL=http://fastapi:8000
     ports:
       - "8501:8501"
     volumes:
@@ -93,6 +95,7 @@ services:
       postgresql:
         condition: service_healthy
     command: streamlit run /app/dashboard/main_page.py --server.address 0.0.0.0
+
 
 volumes:
   postgres_data:
