@@ -1,54 +1,51 @@
 from db import get_connection
 from collections import defaultdict
 
+from pyspark.sql.functions import when, sum as spark_sum
 
-def aggregate(logs):
-    print(f"aggregate loge check : {logs}")
-    print("type = ",type(logs))
-    result = defaultdict(int)
-
-    for log in logs:
-
-        score = 1
-
-        if log["action_type"] == "LIKE":
-            score = 3
-
-        key = (
-            log["user_id"],
-            log["category_name"]
+def aggregate_spark(df):
+    return (
+        df.withColumn(
+            "score",
+            when(df.action_type == "LIKE", 3).otherwise(1)
+        ).groupBy(
+            "user_id",
+            "category_name"
+        ).agg(
+            spark_sum("score").alias("weight")
         )
-
-        result[key] += score
-
-    return result
+    )
 
 
-def upsert_weights(weights):
-
+def upsert_weights(df):
+    rows = df.collect()
     conn = get_connection()
 
     try:
         cur = conn.cursor()
 
-        for (user_id, category_name), weight in weights.items():
-
+        for row in rows:
             cur.execute("""
-                INSERT INTO user_category_weights (
+                INSERT INTO user_category_weights
+                (
                     user_id,
                     category_name,
                     weight,
                     updated_at
                 )
-                VALUES (%s, %s, %s, NOW())
-                ON CONFLICT (user_id, category_name)
+                VALUES (%s,%s,%s,NOW())
+
+                ON CONFLICT(user_id, category_name)
                 DO UPDATE SET
-                    weight = user_category_weights.weight + EXCLUDED.weight,
+                    weight =
+                        user_category_weights.weight
+                        + EXCLUDED.weight,
                     updated_at = NOW()
-            """, (
-                user_id,
-                category_name,
-                weight
+            """,
+            (
+                row["user_id"],
+                row["category_name"],
+                row["weight"]
             ))
 
         conn.commit()

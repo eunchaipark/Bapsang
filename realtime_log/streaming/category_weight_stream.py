@@ -1,29 +1,36 @@
 from time import sleep
-from realtime_log.repository.offset_repo import get_last_offset, update_offset, load_logs
-from realtime_log.repository.weight_repo import aggregate, upsert_weights
+from realtime_log.repository.offset_repo import get_last_offset, update_offset, get_current_max_id, load_logs_spark
+from realtime_log.repository.weight_repo import aggregate_spark, upsert_weights
+from pyspark.sql import SparkSession
 
 
 while True:
     try:
         last_offset = get_last_offset()
 
-        logs = load_logs(last_offset)
-        if not logs:
-            print("[STREAM] no new logs")
+        max_log_id = get_current_max_id()
+
+        if max_log_id <= last_offset:
+            print("no new logs")
+            sleep(20)
+            continue
+        
+        #새로 입력된 데이터 있는지 확인
+        df = load_logs_spark(last_offset, max_log_id)
+
+        if df.rdd.isEmpty():
+            print("no new logs")
             sleep(20)
             continue
 
-        weights = aggregate(logs)
+        #가중치 부여
+        result_df = aggregate_spark(df)
 
-        upsert_weights(weights)
-
-        max_log_id = max(
-            log["log_id"]
-            for log in logs
-        )
+        upsert_weights(result_df)
+        
         update_offset(max_log_id)
         
-        print(f"[STREAM] processed {len(logs)} logs")
+        print(f"processed {max_log_id} logs")
 
     except Exception as e:
         print(f"[STREAM ERROR] : {e}")
