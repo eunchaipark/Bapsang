@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import os
 import requests
 from db import get_connection
@@ -7,10 +8,7 @@ from dashboard.components.search_box import send_interaction_log
 FASTAPI_URL = os.getenv("FASTAPI_URL", "http://localhost:8000")
 
 
-def fetch_popular_fallback(limit=10):
-    """
-    ALS 추천 결과가 없을 때 사용되는 폴백 목록으로 전체 인기 순위(click_count 높은 순)를 가져옵니다.
-    """
+def fetch_popular_fallback(limit=20):
     conn = get_connection()
     try:
         cur = conn.cursor()
@@ -20,96 +18,127 @@ def fetch_popular_fallback(limit=10):
             ORDER BY click_count DESC, food_name ASC
             LIMIT %s
         """, (limit,))
-        rows = cur.fetchall()
         return [
             {
                 "food_id": row[0],
                 "food_name": row[1],
                 "category_name": row[2],
-                "click_count": row[3],
                 "score": 0.0,
                 "rank": idx + 1
             }
-            for idx, row in enumerate(rows)
+            for idx, row in enumerate(cur.fetchall())
         ]
     except Exception as e:
-        print(f"Error fetching popular fallback: {e}")
+        print(f"Error fetching fallback: {e}")
         return []
     finally:
         cur.close()
         conn.close()
 
+
+@st.dialog("음식 상세")
+def food_detail_dialog(food_id: int, food_name: str, category_name: str):
+    st.markdown(f"### {food_name}")
+    st.markdown(f"**카테고리:** {category_name}")
+    st.markdown("---")
+
+    naver_url = f"https://map.naver.com/v5/search/{food_name} 맛집"
+    google_url = f"https://www.google.com/search?q={food_name} 레시피"
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.link_button("🗺️ 맛집 찾기", naver_url, use_container_width=True)
+    with col2:
+        st.link_button("🍳 레시피 찾기", google_url, use_container_width=True)
+
+    st.markdown("---")
+    if st.button("찜하기 ❤️", use_container_width=True, key=f"dialog_like_{food_id}"):
+        send_interaction_log(st.session_state.user_id, food_id, category_name, "LIKE")
+        st.success("찜 목록에 추가됐어요!")
+
+
 def render_recommendation_panel():
-    """
-    개인화 추천 목록 패널을 렌더링합니다.
-    """
-    st.markdown('<div class="section-title">⭐ 나만을 위한 추천 메뉴</div>', unsafe_allow_html=True)
-    st.markdown('<p style="color:#a0aec0; font-size:0.9rem; margin-top:-10px;">ALS 배치 알고리즘을 통해 계산된 개인 취향 저격 음식 목록입니다.</p>', unsafe_allow_html=True)
-    
+    components.html("""
+    <style>
+        body { margin:0; padding:0; background:transparent; }
+        .section-title { font-size:1.4rem; font-weight:700; color:#f39c12; border-left:4px solid #e67e22; padding-left:10px; margin:0 0 4px 0; font-family:'Pretendard','Noto Sans KR',sans-serif; }
+        .section-desc { color:#a0aec0; font-size:0.88rem; margin:4px 0 0 0; font-family:'Pretendard','Noto Sans KR',sans-serif; }
+    </style>
+    <p class="section-title">나만을 위한 추천 메뉴</p>
+    <p class="section-desc">ALS 배치 알고리즘으로 계산된 개인화 추천 목록입니다. 카드를 클릭해 맛집이나 레시피를 찾아보세요.</p>
+    """, height=70, scrolling=False)
+
     user_id = st.session_state.user_id
     recommendations = []
     is_fallback = False
-    
-    # API 호출을 통한 ALS 추천 리스트 조회
+
     try:
         response = requests.get(f"{FASTAPI_URL}/recommendations/{user_id}", timeout=3)
         if response.status_code == 200:
-            data = response.json()
-            recommendations = data.get("recommendations", [])
-        elif response.status_code == 404:
-            # 404: 추천 결과가 없음 (신규 가입 유저 등) -> 인기순 폴백 작동
-            is_fallback = True
-            recommendations = fetch_popular_fallback(10)
+            recommendations = response.json().get("recommendations", [])
         else:
-            st.warning(f"추천 서버 경고 (코드: {response.status_code}) - 인기 순으로 대체합니다.")
             is_fallback = True
-            recommendations = fetch_popular_fallback(10)
-            
-    except requests.exceptions.RequestException:
-        # API 서버가 다운된 경우도 인기순 폴백으로 안전하게 대응
+            recommendations = fetch_popular_fallback(20)
+    except Exception:
         is_fallback = True
-        recommendations = fetch_popular_fallback(10)
-        
-    # 새로고침 버튼 배치
-    ref_col1, ref_col2 = st.columns([8, 2])
-    with ref_col2:
-        if st.button("🔄 새로고침", key="rec_refresh"):
+        recommendations = fetch_popular_fallback(20)
+
+    col_title, col_btn = st.columns([8, 2])
+    with col_btn:
+        if st.button("새로고침", key="rec_refresh", use_container_width=True):
             st.rerun()
 
-    # 결과 출력
+    if is_fallback:
+        st.caption("아직 개인 추천 데이터가 없어 인기 메뉴를 보여드립니다. 클릭/찜을 쌓으면 개인 맞춤으로 전환됩니다.")
+
     if not recommendations:
         st.info("표시할 추천 음식이 없습니다.")
-    else:
-        if is_fallback:
-            st.caption("ℹ️ 아직 개인 추천 데이터가 완성되지 않아 인기 메뉴(click_count 순)를 추천 중입니다. (배치 러너가 갱신되면 개인 맞춤으로 전환됩니다)")
-            
-        for idx, rec in enumerate(recommendations):
-            food_id = rec.get("food_id")
-            food_name = rec.get("food_name")
-            category_name = rec.get("category_name")
-            score = rec.get("score", 0.0)
-            rank = rec.get("rank", idx + 1)
-            
-            # 카드 컴포넌트 HTML 구조
-            score_text = f"예측 선호도: {score:.3f}" if score > 0 else ""
-            card_html = f"""
-            <div class="food-card">
-                <div>
-                    <span style="font-weight: 700; color: #e67e22; margin-right: 8px;">#{rank}</span>
-                    <span class="food-name">{food_name}</span>
-                    <span class="category-badge">{category_name}</span>
-                    <span style="font-size:0.8rem; color:#718096; margin-left:10px;">{score_text}</span>
-                </div>
-            </div>
-            """
-            st.markdown(card_html, unsafe_allow_html=True)
-            
-            btn_col1, btn_col2, btn_spacer = st.columns([1, 1.2, 4])
-            with btn_col1:
-                if st.button("🖱️ 클릭", key=f"rec_click_{food_id}_{idx}"):
-                    send_interaction_log(user_id, food_id, category_name, "CLICK")
-            with btn_col2:
-                if st.button("❤️ 찜하기", key=f"rec_like_{food_id}_{idx}"):
-                    send_interaction_log(user_id, food_id, category_name, "LIKE")
-            
-            st.write("---")
+        return
+
+    # 가로 스크롤 카드 HTML
+    cards_html = '<div style="display:flex; gap:12px; overflow-x:auto; padding:8px 0 16px 0; scrollbar-width:thin; scrollbar-color:#e67e22 #1a1d23;">'
+    for rec in recommendations:
+        score = rec.get("score", 0.0)
+        score_text = f"선호도 {score:.2f}" if score > 0 else "인기순"
+        cards_html += f"""
+        <div style="
+            min-width:160px; max-width:160px;
+            background:rgba(255,255,255,0.03);
+            border:1px solid rgba(255,255,255,0.07);
+            border-radius:12px;
+            padding:16px 14px;
+            cursor:pointer;
+            transition:border-color 0.2s;
+            flex-shrink:0;
+        "
+        onmouseover="this.style.borderColor='rgba(230,126,34,0.5)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'"
+        >
+            <div style="font-weight:700; color:#e67e22; font-size:0.8rem; margin-bottom:6px;">#{rec.get('rank', '')}</div>
+            <div style="font-weight:600; color:#f7fafc; font-size:0.95rem; margin-bottom:6px; line-height:1.3;">{rec.get('food_name', '')}</div>
+            <div style="background:rgba(230,126,34,0.15); color:#e67e22; padding:2px 8px; border-radius:6px; font-size:0.72rem; font-weight:600; display:inline-block; margin-bottom:8px;">{rec.get('category_name', '')}</div>
+            <div style="color:#718096; font-size:0.75rem;">{score_text}</div>
+        </div>
+        """
+    cards_html += '</div>'
+    components.html(f"""
+    <style>
+        body {{ margin:0; padding:0; background:transparent; }}
+        ::-webkit-scrollbar {{ height:4px; }}
+        ::-webkit-scrollbar-track {{ background:#1a1d23; }}
+        ::-webkit-scrollbar-thumb {{ background:#e67e22; border-radius:4px; }}
+    </style>
+    {cards_html}
+    """, height=200, scrolling=False)
+
+    # 카드 클릭 버튼 (Streamlit 이벤트용)
+    cols = st.columns(min(len(recommendations), 5))
+    for idx, rec in enumerate(recommendations[:10]):
+        food_id = rec.get("food_id")
+        food_name = rec.get("food_name")
+        category_name = rec.get("category_name")
+        col_idx = idx % 5
+        with cols[col_idx]:
+            if st.button(food_name[:6], key=f"r_open_{food_id}_{idx}", use_container_width=True):
+                send_interaction_log(user_id, food_id, category_name, "CLICK")
+                food_detail_dialog(food_id, food_name, category_name)
