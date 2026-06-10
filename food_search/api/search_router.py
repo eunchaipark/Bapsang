@@ -5,7 +5,7 @@ from food_search.service.hybrid_merger import merge_results
 
 router = APIRouter()
 
-@router.get("/api/search")
+@router.get("")
 async def search_foods(q: str = Query(..., description="검색어"), limit: int = 10):
     """
     Full-Text 키워드 검색과 pgvector 의미론적 검색 결과를 병합한 하이브리드 검색 결과를 반환합니다.
