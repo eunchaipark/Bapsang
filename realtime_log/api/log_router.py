@@ -10,7 +10,7 @@ from realtime_log.service.log_service import save_log
 
 router = APIRouter()
 
-@router.post("/logs")
+@router.post("/click")
 async def create_log(payload: dict):
     await save_log(payload)
 
