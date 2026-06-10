@@ -1,0 +1,151 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+html, body, [class*="css"] {
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+}
+
+.stApp {
+    background-color: #0b0d10;
+    color: #e2e8f0;
+}
+
+.title-gradient {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 50%, #d35400 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 3rem;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: -1px;
+    margin-bottom: 0.3rem;
+}
+
+.subtitle-text {
+    color: #a0aec0;
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    font-weight: 300;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.section-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #f39c12;
+    margin: 2rem 0 0.6rem 0;
+    border-left: 4px solid #e67e22;
+    padding-left: 10px;
+    letter-spacing: -0.3px;
+}
+
+.section-desc {
+    color: #a0aec0;
+    font-size: 0.88rem;
+    margin-top: -6px;
+    margin-bottom: 1rem;
+}
+
+.profile-banner {
+    background: rgba(230, 126, 34, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.food-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    transition: border-color 0.2s ease;
+}
+
+.food-card:hover {
+    border-color: rgba(230, 126, 34, 0.3);
+}
+
+.food-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f7fafc;
+}
+
+.category-badge {
+    background: rgba(230, 126, 34, 0.15);
+    color: #e67e22;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.category-badge-purple {
+    background: rgba(155, 89, 182, 0.15);
+    color: #9b59b6;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.meta-text {
+    font-size: 0.78rem;
+    color: #718096;
+    margin-left: 8px;
+}
+
+.section-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin: 2.5rem 0;
+}
+
+div.stButton > button {
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%) !important;
+    color: white !important;
+    border-radius: 20px !important;
+    border: none !important;
+    padding: 6px 20px !important;
+    font-weight: 600 !important;
+    font-family: 'Pretendard', sans-serif !important;
+}
+
+div.stButton > button:hover {
+    filter: brightness(1.1) !important;
+    transform: translateY(-1px) !important;
+}
+
+div[data-testid="stTextInput"] input {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 10px !important;
+    color: rgb(24 27 45) !important;
+    font-family: 'Pretendard', sans-serif !important;
+}
+
+div[data-testid="stTextInput"] input:focus {
+    border-color: rgba(230, 126, 34, 0.5) !important;
+    box-shadow: 0 0 0 2px rgba(230, 126, 34, 0.15) !important;
+}
+
+div[data-testid="stSelectbox"] > div {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 10px !important;
+}
